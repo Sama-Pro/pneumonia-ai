@@ -15,8 +15,8 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Load model
-MODEL_PATH = "pneumonia_cnn_model.h5"
-FILE_ID = "1z6ER6Xjagz1hMyCi0AT8sajHpTJTx2xt"
+MODEL_PATH = "model.keras"
+FILE_ID = "1KRCf9V7LHATul3LeuYT_vyR39uA-HNjj"
 
 if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
     print("Downloading model from Google Drive...")
