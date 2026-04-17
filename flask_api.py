@@ -4,8 +4,8 @@ import numpy as np
 from PIL import Image
 import os
 import uuid
-import gdown
 import threading
+from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
 CORS(app)
@@ -14,29 +14,19 @@ CORS(app)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Model settings
-MODEL_PATH = "model.keras"
-FILE_ID = "1KRCf9V7LHATul3LeuYT_vyR39uA-HNjj"
+# Model settings (LOCAL .h5 ONLY)
+MODEL_PATH = "pneumonia_cnn_model.h5"
 
-# Lazy-loaded model (IMPORTANT FIX)
 model = None
 lock = threading.Lock()
 
 
+# ✅ SAFE MODEL LOADER (Render-safe)
 def load_model_safe():
-    """Download + load model only when needed"""
     global model
 
     with lock:
         if model is None:
-            from tensorflow.keras.models import load_model
-
-            # Download if missing
-            if not os.path.exists(MODEL_PATH):
-                print("Downloading model from Google Drive...")
-                url = f"https://drive.google.com/uc?id={FILE_ID}"
-                gdown.download(url, MODEL_PATH, quiet=True)
-
             print("Loading model...")
             model = load_model(MODEL_PATH, compile=False)
             print("Model loaded successfully!")
@@ -78,7 +68,7 @@ def predict():
         img = Image.open(file_path).convert('RGB')
         img_np = np.array(img)
 
-        # Basic validation (X-ray check)
+        # X-ray validation (grayscale check)
         is_grayscale = (
             np.allclose(img_np[:, :, 0], img_np[:, :, 1], atol=10) and
             np.allclose(img_np[:, :, 1], img_np[:, :, 2], atol=10)
@@ -116,7 +106,7 @@ def download(filename):
     return send_file(file_path, as_attachment=True)
 
 
-# IMPORTANT for Render
+# Render entry point
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
