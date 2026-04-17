@@ -24,7 +24,7 @@ if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
     gdown.download(url, MODEL_PATH, quiet=False)
 
 print("Loading model...")
-model = load_model(MODEL_PATH)
+model = load_model(MODEL_PATH, compile=False)
 print("Model loaded successfully!")
 
 
