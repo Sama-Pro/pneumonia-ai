@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import uuid
 import threading
+import gdown
 from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
@@ -14,25 +15,43 @@ CORS(app)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Model settings (LOCAL .h5 ONLY)
+# =========================
+# MODEL CONFIG (GOOGLE DRIVE)
+# =========================
 MODEL_PATH = "pneumonia_cnn_model.h5"
+
+# 🔴 PUT YOUR GOOGLE DRIVE FILE ID HERE
+
+FILE_ID = "1z6ER6Xjagz1hMyCi0AT8sajHpTJTx2xt"
 
 model = None
 lock = threading.Lock()
 
 
-# ✅ SAFE MODEL LOADER (Render-safe)
+# =========================
+# LOAD MODEL SAFELY
+# =========================
 def load_model_safe():
     global model
 
     with lock:
         if model is None:
+
+            # Download if not present
+            if not os.path.exists(MODEL_PATH):
+                print("Downloading model from Google Drive...")
+                url = f"https://drive.google.com/uc?id={FILE_ID}"
+                gdown.download(url, MODEL_PATH, quiet=False)
+
+            # Load model
             print("Loading model...")
             model = load_model(MODEL_PATH, compile=False)
             print("Model loaded successfully!")
 
 
-# Preprocess image
+# =========================
+# IMAGE PREPROCESSING
+# =========================
 def preprocess_image(img_path):
     img = Image.open(img_path).convert('RGB')
     img = img.resize((150, 150))
@@ -41,13 +60,17 @@ def preprocess_image(img_path):
     return img_array
 
 
-# Home route
+# =========================
+# HOME PAGE
+# =========================
 @app.route('/')
 def home():
     return render_template("index.html")
 
 
-# Predict API
+# =========================
+# PREDICTION API
+# =========================
 @app.route('/predict', methods=['POST'])
 def predict():
     if 'file' not in request.files:
@@ -68,7 +91,7 @@ def predict():
         img = Image.open(file_path).convert('RGB')
         img_np = np.array(img)
 
-        # X-ray validation (grayscale check)
+        # X-ray validation
         is_grayscale = (
             np.allclose(img_np[:, :, 0], img_np[:, :, 1], atol=10) and
             np.allclose(img_np[:, :, 1], img_np[:, :, 2], atol=10)
@@ -79,7 +102,7 @@ def predict():
         if not is_grayscale or mean_val < 30 or mean_val > 220:
             return jsonify({"error": "Please upload a valid chest X-ray image"}), 400
 
-        # Ensure model is loaded
+        # Load model (FROM GOOGLE DRIVE)
         load_model_safe()
 
         # Predict
@@ -99,14 +122,18 @@ def predict():
         return jsonify({"error": str(e)}), 500
 
 
-# Download endpoint
+# =========================
+# DOWNLOAD FILE
+# =========================
 @app.route('/download/<filename>')
 def download(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     return send_file(file_path, as_attachment=True)
 
 
-# Render entry point
+# =========================
+# RUN SERVER (RENDER SAFE)
+# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
