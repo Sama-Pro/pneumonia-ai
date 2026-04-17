@@ -21,7 +21,7 @@ FILE_ID = "1z6ER6Xjagz1hMyCi0AT8sajHpTJTx2xt"
 if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
     print("Downloading model from Google Drive...")
     url = f"https://drive.google.com/uc?id={FILE_ID}"
-    gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+    gdown.download(url, MODEL_PATH, quiet=False)
 
 print("Loading model...")
 model = load_model(MODEL_PATH)
