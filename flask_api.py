@@ -88,8 +88,3 @@ def predict():
 def download(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     return send_file(file_path, as_attachment=True)
-
-# Run server
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
