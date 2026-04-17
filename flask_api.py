@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 import os
 import uuid
+import gdown
 
 app = Flask(__name__)
 CORS(app)
@@ -14,8 +15,18 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Load model
-model = load_model("pneumonia_cnn_model.h5")
+MODEL_PATH = "pneumonia_cnn_model.h5"
+FILE_ID = "1z6ER6Xjagz1hMyCi0AT8sajHpTJTx2xt"
+
+if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 1000000:
+    print("Downloading model from Google Drive...")
+    url = f"https://drive.google.com/uc?id={FILE_ID}"
+    gdown.download(url, MODEL_PATH, quiet=False, fuzzy=True)
+
+print("Loading model...")
+model = load_model(MODEL_PATH)
 print("Model loaded successfully!")
+
 
 # Preprocess image
 def preprocess_image(img_path):
@@ -59,7 +70,7 @@ def predict():
 
         # Preprocess and predict
         img_array = preprocess_image(file_path)
-        prediction = model.predict(img_array)[0][0]
+        prediction = model.predict(img_array, verbose=0)[0][0]
         result = "Pneumonia" if prediction > 0.5 else "Normal"
         confidence = prediction if prediction > 0.5 else (1 - prediction)
 
